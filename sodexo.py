@@ -41,62 +41,65 @@ for data in table_data:
             sodexo.append(buy)
             # buy[""]
 
-print(sodexo)
+#print(sodexo)
 sObj = Splitwise(config.consumer_key,config.consumer_secret,api_key=config.api_key)
 
 start_date = datetime.datetime.now() - datetime.timedelta(config.days)
 current = sObj.getExpenses(group_id=config.groupId, dated_after=start_date.isoformat(), visible=True, limit=50)
 for curr in current:
     for user in curr.getUsers():
-        if user.getId() == config.beatrizId and float(user.getPaidShare()) == 0:
+        if user.getId() == config.user2 and float(user.getPaidShare()) == 0:
             buy = {}
             date = datetime.datetime.strptime(
                 curr.getDate(), "%Y-%m-%dT%H:%M:%SZ")
             buy["date"] = date.strftime('%Y-%m-%d')
             buy["desc"] = curr.getDescription()
             buy["price"] = curr.getCost()
-            print(curr.getDescription())
+            #print(curr.getDate())
             splitwise.append(buy)
 
-print("---------")
-print(splitwise)
-print("---------")
+#print("---------")
+#print(splitwise)
+#print("---------")
 
 for tran in sodexo:
     if tran not in splitwise:
-        print(f"adding {tran}")
-        owedShareBeatriz  = round(float(tran["price"])/2, 2)
-        owedShareValverde = owedShareBeatriz
+        #print(f"adding {tran}")
+        userShares = [0 ,0]
+        userShares[1]  = round(float(tran["price"])/2, 2)
+        userShares[0] = userShares[1]
 
-        if owedShareBeatriz*2 > float(tran["price"]):
+        if userShares[1]*2 > float(tran["price"]):
             if random.choice([True, False]):
-                owedShareBeatriz = owedShareBeatriz - 0.01
+                userShares[1] = userShares[1] - 0.01
             else:
-                owedShareValverde = owedShareValverde - 0.01
-        elif owedShareBeatriz*2 < float(tran["price"]):
+                userShares[0] = userShares[0] - 0.01
+        elif userShares[1]*2 < float(tran["price"]):
             if random.choice([True, False]):
-                owedShareBeatriz = owedShareBeatriz + 0.01
+                userShares[1] = userShares[1] + 0.01
             else:
-                owedShareValverde = owedShareValverde + 0.01
+                userShares[0] = userShares[0] + 0.01
         
         #print(owedShareBeatriz)
         #print(owedShareValverde)
         #print(owedShareBeatriz*2)
         expense = Expense()
+        date = tran["date"]
+        date = f"{date}T00:00:00Z"
         expense.setCost(tran["price"])
         expense.setDescription(tran["desc"])
         expense.setGroupId(config.groupId)
-        expense.setDate(tran["date"])
+        expense.setDate(date)
 
         user1 = ExpenseUser()
-        user1.setId(config.beatrizId)
-        user1.setPaidShare('0.00')
-        user1.setOwedShare(owedShareBeatriz)
+        user1.setId(config.user1)
+        user1.setPaidShare(tran["price"])
+        user1.setOwedShare(userShares[1])
 
         user2 = ExpenseUser()
-        user2.setId(config.delfimId)
-        user2.setPaidShare(tran["price"])
-        user2.setOwedShare(owedShareValverde)
+        user2.setId(config.user2)
+        user2.setPaidShare('0.00')
+        user2.setOwedShare(userShares[0])
 
         users = []
         users.append(user1)
@@ -106,4 +109,4 @@ for tran in sodexo:
         expense, errors = sObj.createExpense(expense)
         if errors:
             print(errors.getErrors())
-        print(expense.getDescription())
+        #print(expense.getDescription())
